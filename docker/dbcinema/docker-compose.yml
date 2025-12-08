@@ -9,6 +9,8 @@ services:
       POSTGRES_USER: cinema
     ports:
       - 5032:5432
+    volumes:
+      - ./sql-init:/docker-entrypoint-initdb.d
 
   gui:
     image: dpage/pgadmin4:latest
