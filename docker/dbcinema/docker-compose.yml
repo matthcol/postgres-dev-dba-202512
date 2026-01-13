@@ -1,14 +1,14 @@
 services:
 
   db:
-    image: postgres:17-bookworm
+    image: postgres:18
     restart: always
     environment:
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: dbcinema
-      POSTGRES_USER: cinema
+      POSTGRES_DB: dbcine
+      POSTGRES_USER: cine
     ports:
-      - 5032:5432
+      - 5433:5432
     volumes:
       - ./sql-init:/docker-entrypoint-initdb.d
 
@@ -16,7 +16,7 @@ services:
     image: dpage/pgadmin4:latest
     restart: always
     ports:
-      - 8080:8080
+      - 8081:80
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.org
       PGADMIN_DEFAULT_PASSWORD: password
