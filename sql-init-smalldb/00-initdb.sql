@@ -7,3 +7,5 @@ create user cinema with login password 'password'; -- scram-sha-256
 
 -- creation du schema sc_cinema appartenant à cinema
 create schema sc_cinema authorization cinema;
+
+alter user cinema set search_path = sc_cinema,public;
