@@ -1,5 +1,5 @@
 #!/bin/bash
-export PGPORT=5434
+export PGPORT=5432
 export PGPASSWORD='password'
 
 # create DATABASE
