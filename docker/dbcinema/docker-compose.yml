@@ -11,6 +11,7 @@ services:
       - 5433:5432
     volumes:
       - ./sql-init:/docker-entrypoint-initdb.d
+      - dbdata:/var/lib/postgresql
 
   gui:
     image: dpage/pgadmin4:latest
@@ -20,3 +21,6 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.org
       PGADMIN_DEFAULT_PASSWORD: password
+
+volumes:
+  dbdata:
