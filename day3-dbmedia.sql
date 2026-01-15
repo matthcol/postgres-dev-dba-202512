@@ -239,6 +239,119 @@ where
 group by p.id
 order by p.id;
 
+-- statistiques de table (utile pour le plan d'execution)
+select * 
+from pg_stats
+where schemaname = 'sc_media'
+order by tablename, attname;
+
+analyze person;
+
+SHOW default_statistics_target; -- 100 i.e. 1%
+
+ALTER TABLE person ALTER COLUMN name SET STATISTICS 1000;
+-- Valeurs typiques :
+-- Colonnes normales : 100 (défaut)
+-- Colonnes importantes : 200-500
+-- Colonnes critiques avec haute cardinalité : 1000-2000
+
+-- Autovacuum se déclenche quand :
+-- tuples_modifiés > threshold + (scale_factor × nombre_total_tuples)
+
+-- Au niveau d'une table
+-- changer les valeurs par défaut des seuils du postgresql.conf
+ALTER TABLE person SET (
+	autovacuum_vacuum_threshold = 100,
+    autovacuum_vacuum_scale_factor = 0.05,    -- 5% au lieu de 20%
+    autovacuum_analyze_threshold = 50,
+    autovacuum_analyze_scale_factor = 0.02 -- 2% au lieu de 10%
+);
+
+analyze person;
+
+-- stats sur les (auto)vacuum et auto(analyze)
+SELECT 
+    schemaname,
+    relname,
+    last_vacuum,
+    last_autovacuum,
+    last_analyze,
+    last_autoanalyze,
+    n_tup_ins,
+    n_tup_upd,
+    n_tup_del,
+    n_live_tup,
+    n_dead_tup  -- utile pour le vacuum full
+FROM pg_stat_user_tables
+WHERE relname = 'person';
+
+-- occupation disque
+SELECT 
+    pg_size_pretty(pg_total_relation_size('person')) AS total_size,
+    pg_size_pretty(pg_relation_size('person')) AS table_size,
+    pg_size_pretty(pg_indexes_size('person')) AS indexes_size,
+    pg_size_pretty(pg_total_relation_size('person') - pg_relation_size('person') - pg_indexes_size('person')) AS toast_size
+;
+
+SELECT 
+    schemaname,
+    tablename,
+    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS total_size,
+    pg_size_pretty(pg_relation_size(schemaname||'.'||tablename)) AS table_size,
+    pg_size_pretty(pg_indexes_size(schemaname||'.'||tablename)) AS indexes_size,
+    pg_total_relation_size(schemaname||'.'||tablename) AS total_bytes
+FROM pg_tables
+WHERE schemaname = 'sc_media'
+ORDER BY total_bytes DESC;
+
+
+select * from pg_extension;
+select * from pg_available_extensions where name like '%stat%';
+
+-- en dba:
+create extension pg_stat_statements;
+select * from pg_extension; 
+
+-- nécessite en + le chargement d'une librairie C++
+-- ERROR:  pg_stat_statements must be loaded via "shared_preload_libraries"
+--
+-- => postgresql.conf add line:
+-- shared_preload_libraries = 'pg_stat_statements'         # (change requires restart)
+select * 
+from pg_stat_statements
+order by mean_exec_time desc;
+
+-- en dba: reset la table de collecte des stats (démarrage phase observation)
+-- ou donner le droit grant execute on function pg_stat_statements_reset to media;
+select pg_stat_statements_reset();
+
+show pg_stat_statements.track;
+
+-- desactiver la collecte de stats
+-- en dba
+ALTER SYSTEM SET pg_stat_statements.track = none; -- + restart
+
+
+select to_tsvector('french', 'Le Clown et ses Chiens');
+
+select to_tsvector('french', 'des chevaux et des chèvres'); -- "'cheval':2 'chevr':5"
+
+
+select *
+from aka
+where to_tsvector('french', title) @@ to_tsquery('french', 'clown & chien')
+	and region = 'FR'
+;
+
+create index idx_aka_title_fr on aka using GIN(to_tsvector('french', title))
+WHERE region = 'FR';
+
+select *
+from aka
+where to_tsvector('french', title) @@ to_tsquery('french', 'guerre & paix')
+	and region = 'FR'
+;
+
 
 
 
